@@ -1,6 +1,7 @@
 package testlib
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/goreleaser/goreleaser/internal/git"
@@ -50,6 +51,10 @@ func fakeGit(args ...string) (string, error) {
 		"-c", "commit.gpgSign=false",
 		"-c", "log.showSignature=false",
 	}
+	if runtime.GOOS == "windows" {
+		allArgs = append(allArgs, "-c", "core.autocrlf=false")
+	}
+
 	allArgs = append(allArgs, args...)
 	return git.Run(allArgs...)
 }
