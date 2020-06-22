@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"testing"
@@ -20,19 +21,28 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var originKeyring = "testdata/gnupg"
+var originKeyring = filepath.Join("testdata", "gnupg")
 var keyring string
 
 func TestMain(m *testing.M) {
 	rand.Seed(time.Now().UnixNano())
-	keyring = fmt.Sprintf("/tmp/gorel_gpg_test.%d", rand.Int())
+	tmpDir := os.TempDir()
+	keyring = filepath.Join(tmpDir, fmt.Sprintf("gorel_gpg_test.%d", rand.Int()))
 	fmt.Println("copying", originKeyring, "to", keyring)
-	if err := exec.Command("cp", "-Rf", originKeyring, keyring).Run(); err != nil {
-		fmt.Printf("failed to copy %s to %s: %s", originKeyring, keyring, err)
+	if out, err := copyDirRecursively(originKeyring, keyring); err != nil {
+		fmt.Printf("failed to copy %s to %s: %s\n%s\n",
+			originKeyring, keyring, err, string(out))
 		os.Exit(1)
 	}
 	defer os.RemoveAll(keyring)
 	os.Exit(m.Run())
+}
+
+func copyDirRecursively(origin, target string) ([]byte, error) {
+	if runtime.GOOS == "windows" {
+		return exec.Command("xcopy", "/E", origin, target).CombinedOutput()
+	}
+	return exec.Command("cp", "-Rf", origin, target).CombinedOutput()
 }
 
 func TestDescription(t *testing.T) {

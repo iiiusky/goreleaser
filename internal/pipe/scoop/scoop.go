@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/apex/log"
@@ -220,7 +219,12 @@ func binaries(a *artifact.Artifact) []string {
 	var bins []string
 	var wrap = a.ExtraOr("WrappedIn", "").(string)
 	for _, b := range a.ExtraOr("Builds", []*artifact.Artifact{}).([]*artifact.Artifact) {
-		bins = append(bins, filepath.Join(wrap, b.Name))
+		// Path is expected to use Windows-style separators
+		bins = append(bins, windowsJoin(wrap, b.Name))
 	}
 	return bins
+}
+
+func windowsJoin(elems ...string) string {
+	return strings.Trim(strings.Join(elems, "\\"), "\\")
 }
